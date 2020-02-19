@@ -1,0 +1,63 @@
+\documentclass{report}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{extdash}
+\usepackage{listings}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\title{Sed Book}
+\author{Ygrex}
+
+\lstset{
+	basicstyle=\fontfamily{pcr}\selectfont,
+	upquote=true,
+	literate={*}{{\char42}}1
+		 {-}{{\char45}}1
+		 {^}{{\char94}}1
+}
+
+\begin{document}
+
+\begin{titlepage}
+
+\ttfamily
+\noindent
+\textbf{\textcolor{Green}{ygrex@ygrex}:\textcolor{blue}{$\sim$}\$} mkdir sed-book
+\newline
+\textbf{\textcolor{Green}{ygrex@ygrex}:\textcolor{blue}{$\sim$}\$}  cd !\$
+\newline
+cd sed-book
+\newline
+\textbf{\textcolor{Green}{ygrex@ygrex}:\textcolor{blue}{$\sim$/sed-book}\$} git init
+\newline
+Initialized empty Git repository in $\sim$/sed-book/.git/
+\newline
+\textbf{\textcolor{Green}{ygrex@ygrex}:\textcolor{blue}{$\sim$/sed-book} [sed-book:]\$} git config user.name Ygrex
+\newline
+\textbf{\textcolor{Green}{ygrex@ygrex}:\textcolor{blue}{$\sim$/sed-book} [sed-book:]\$} git config user.email ygrex@ygrex.ru
+\newline
+\textbf{\textcolor{Green}{ygrex@ygrex}:\textcolor{blue}{$\sim$/sed-book} [sed-book:]\$} ed sed-book.tex
+\begin{verbatim}
+sed-book.tex: No such file or directory
+a
+\documentclass{article}
+\title{Sed Book}
+\author{Ygrex}
+\begin{document}
+\maketitle
+\end{document}
+.
+w
+99
+\end{verbatim}
+\rmfamily
+
+{\let\newpage\relax\maketitle}
+
+\end{titlepage}
+
+\tableofcontents{}
+\include{introduction}
+\include{simple-sed}
+
+\end{document}

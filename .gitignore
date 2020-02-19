@@ -1,0 +1,4 @@
+*.aux
+sed-book.log
+sed-book.toc
+sed-book.out

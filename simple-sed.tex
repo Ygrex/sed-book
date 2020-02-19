@@ -1,0 +1,224 @@
+\chapter{Simple Sed}
+\section{What is Sed}
+Sed in this book refers to GNU Sed most of the time.
+GNU Sed is a POSIX compliant version of Sed with GNU specific extensions
+distributed under conditions of GPL.
+
+GNU extensions are used extensively across the book, so that other
+versions of Sed unlikely will give similar result.
+
+Simple and intended way of using Sed is processing text line-by-line
+in a command line or in shell scripts. Quick example is extracting top-level
+domains from a list of FQDNs:
+
+\begin{lstlisting}
+$ printf '%s\n' host.com host.org localhost.com |
+	sed 's/^.*\.//'
+com
+org
+com
+\end{lstlisting}
+
+Next example features filtering out wrong domain names.
+For simplicity wrong domain names are
+those words that contain no dot:
+
+\begin{lstlisting}[caption={Simple filtering},label={lst:simple-filtering}]
+$ printf '%s\n' not-a-domain host.com host.org localhost.com |
+	sed -n 's/^.*\.//p'
+com
+org
+com
+\end{lstlisting}
+
+Here \lstinline{not-a-domain} is the wrong domain which gets filtered out.
+
+These two examples are quite simple and probably familiar to the reader,
+but here are a few Sed concepts worth highlighting very the more
+involved examples are introduced.
+
+\subsection{One-line greediness}
+
+Pattern from the first example has assumption about the greediness:
+\lstinline{/^.*\./}
+
+It is important for multi-level domain names, for example \lstinline{www.example.com}.
+It contains tow substrings matching the pattern (i.e. a substring spanning from the
+beginning of a line till a dot character):
+\lstinline{www.} and \lstinline{www.example.},
+which one matches from the whole string depends on the greediness.
+Sed has only greedy matching, in other words the longest possible
+substring selected and filtered out after being substituted with an empty string:
+\begin{lstlisting}[caption={Simple greedy matching}, label={lst:simple-greedy}]
+$ echo www.example.com | sed 's/^.*\.//'
+com
+\end{lstlisting}
+
+Let's assume for a moment that a non-greedy matching desired, for the above
+examples it would mean matching on the left-most domain name segment.
+The common approach for single line patterns is to replace
+``everything matcher'' \lstinline{/.*/} with ``matching everything but
+a separator'' \lstinline{/[^.]*/}. It might be confusing to see a dot
+character in two meanings here: as a literal dot, that separates domain
+name segments, and a special pattern matching against any character.
+Both meanings must be clearly understood differently as having no common
+semantics. The resulting non-greedy pattern now looks like:
+\begin{lstlisting}[caption={Simple non-greedy matching}, label={lst:simple-nongreedy}]
+$ echo www.example.com | sed 's/^[^.]*\.//'
+example.com
+\end{lstlisting}
+
+This approach is the most simple one. But for sure it has its own limitations
+and not universally applicable. In particular, meaning of \lstinline{[^.]*}
+changes in multi-line mode (controlled by \lstinline{m} or \lstinline{M}
+modifiers).
+
+Just one more example to achieve a non-greedy matching from the left will start
+with a greedy matching from the right:
+\begin{lstlisting}
+$ echo www.example.com | sed 's/\..*$/\n&/'
+www
+.example.com
+\end{lstlisting}
+
+Here the input string transformed into two lines, first one contains exactly
+the same substring as matched above with a non-greedy pattern
+\lstinline{/^[^.]*/}. The later is to filter it out:
+\begin{lstlisting}
+$ echo www.example.com | sed 's/\..*$/\n&/ ; s/^.*\n//'
+.example.com
+\end{lstlisting}
+and to get rid of the leading separator (dot character):
+\begin{lstlisting}
+$ echo www.example.com | sed 's/\..*$/\n&/ ; s/^.*\n\.//'
+example.com
+\end{lstlisting}
+Now the result is the same as in the simple example above~\ref{lst:simple-nongreedy}.
+
+One more non-greedy example, which will be useful going forward, is to replace
+first separator by a special character which is not expected to be used anywhere
+else in the input:
+\begin{lstlisting}
+$ echo www.example.com | sed 's/\./\x01/'                
+wwwexample.com
+\end{lstlisting}
+Here \lstinline{\x01} is a non-printable character, which used for that purpose.
+The next is to run exactly the same~\ref{lst:simple-greedy} substitution command
+but with this special separator:
+\begin{lstlisting}
+$ echo www.example.com | sed 's/\./\x01/ ; s/^.*\x01//'
+example.com
+\end{lstlisting}
+Note the result is identical to the previous one~\ref{lst:simple-nongreedy}.
+
+\subsection{Pattern space}
+
+As it happens all the time when working in a world of regular expressions,
+there is one more overloaded term. The pattern space is a special text buffer in Sed.
+All text transformation can only happen in this buffer.
+
+Rules for the pattern space are:
+\begin{itemize}
+	\item Every Sed script has an input data. On the first execution cycle
+		the pattern space contains first line of the input
+		excluding newline (newline means a line separator which is
+		parameterized).
+\begin{lstlisting}
+$ printf '%s\n' first second | sed 's/^first$/&/p ; Q'
+first
+\end{lstlisting}
+	\item Input might have no trailing newline, it is indistinguishable
+		from Sed script:
+\begin{lstlisting}
+$ printf 'abc' | sed -n 's/^// ; l ; Q'    
+abc$
+
+$ printf 'abc\n' | sed -n 's/^// ; l ; Q'
+abc$
+\end{lstlisting}
+		with one exception, when input is empty:
+\begin{lstlisting}
+$ printf '' | sed -n 's/^// ; l ; Q'
+\end{lstlisting}
+		in this case, the script does not execute at all.
+		\item Every subsequent cycle receives next input line
+			in the pattern space. Any data from the previous
+			cycle left in the pattern space gets replaced
+			entirely, if not explicitly instructed otherwise.
+		\item If instructed explicitly, data from the pattern space
+			might be partially passed down to the next cycle and
+			optionally mixed with next input line.
+		\item It is also allowed to append next input line into the
+			pattern space and proceed execution of the current cycle.
+\end{itemize}
+
+Last two points are of limited use for there are conditions depending on
+the data itself. Trying to pass down part of the pattern space might
+occasionally result in reading input, while reading input might occasionally
+interrupt the execution of the whole script. For starts it is reasonable to
+focus on first three rules and note that pattern space usually does not
+keep data between execution cycles.
+
+That is how data arrives to the pattern space. The next aspect is
+sending this data to the output stream. It is not worth mentioning
+unless an auto-printing mode is enabled.
+Since it is enabled by default and the output stream is the
+only valuable result of the Sed script execution most of the time,
+it is important to track state of the pattern space at the time
+it gets sent to the output stream.
+In auto-printing mode it happens at the end of each cycle and
+implicitly with some commands (quitting command
+\lstinline{q} is one notable example).
+Things are more simple if printing pattern space is controlled
+explicitly, all but very simple examples in this book will have
+the auto-printing off.
+
+One more note to the pattern space and output stream interaction
+will be important if one expects Sed to be a tool for binary
+data processing (which is not). As stated above, it cannot be
+known from inside the script itself, if the input line has
+a trailing newline or not. That is true, but output will have
+the trailing newline depending on its presence in the input:
+\begin{lstlisting}
+$ echo 'sed' | sed -n 's/^...$/success/p ; Q'    
+success
+
+$ printf 'sed' | sed -n 's/^...$/success/p ; Q' | wc -c
+7
+
+$ printf 'sed\n' | sed -n 's/^...$/success/p ; Q' | wc -c
+8
+\end{lstlisting}
+Any output command behaves the same way: \lstinline{p},
+\lstinline{P}, \lstinline{w}, \lstinline{W} and
+implicit printing.
+Unambiguous printing \lstinline{l} ignores the distinction
+consistently though, it always appends \lstinline{$} and newline,
+but it is hardly useful for anything but debugging.
+
+With that all said about the pattern space and printing, let's have
+a closer look to the above filtering example~\ref{lst:simple-filtering}.
+First of all, it runs in a mode with auto-printing off.
+The result is only assembled by calling printing command
+\lstinline{p} explicitly. In this case the command is
+called indirectly by substitution \lstinline{s} whenever
+it succeeds. On its turn it succeeds whenever the
+substitution pattern \lstinline{/^.*\./} matches against
+the text in the pattern space. The pattern space in this
+particular example on each execution cycle receives one
+word from list:
+\lstinline{not-a-domain}, \lstinline{host.com},
+\lstinline{host.org} or \lstinline{localhost.com}.
+Those words, which do not match the substitution pattern,
+are skipped by the substitution command and the next
+execution cycle starts with the next input word placed
+in the pattern space. This is the filtering part.
+
+Those words, which happen to match the substitution pattern,
+get transformed (the greedily matching substring removed
+by this).
+Transformation alters the content of the pattern space,
+data gets entirely replaced by the substitution result.
+After that, substitution continues to printing because of
+\lstinline{p} flag (it is not a command but a flag in this
+context) and follows to the next execution cycle then.
