@@ -1,0 +1,50 @@
+\chapter{From Sed to Ed}
+As a historical detour there is a good \href{http://www.columbia.edu/~hauben/book/}{Netizens Netbook} to read.
+What is up to Sed from it is that there was a text editor Ed
+in a wide spread use in small circles of the time.
+Limitations of the editor lead Ken Thompson to abstract out
+a global pattern finder named grep.
+Forseeing the practical value as well as developing the
+idea of abstracting text processing tools further,
+McMahon wrote Sed.
+One can refer to McMahon's
+\href{https://people.eecs.berkeley.edu/~clancy/sp.unix.stuff/sed.pdf}
+{SED -- A Non-interactive Text Editor} for motivation behind Sed.
+
+One more time to recap is that Sed implements one function
+of Ed, evolves it and brings as a standalone tool.
+
+With the close connection of Sed with Ed, it is natural
+to master Sed scripting with power of Ed. As a side note,
+this whole book and supplementary materials are written in Ed.
+Ed itself and Sed in particular were influenced by other
+prominent editor QED, but its availability nowadays makes it
+not that attractive choice for the purposes of this book.
+Also it happened that QED and Ed are essentially similar, so
+that it is not that important which one of two is to choose.
+What matters here is to really get oneself through that
+interface and immerse in that text processing world full of
+abstractions and lacking most of the features all modern
+text editors provide, but which are rather distracting in studying
+Sed way of thinking.
+
+\section{Introduction to Ed}
+As pointed out above, Ed was quite influential, so that a few tools
+inheritted its concepts at certain extent. This way Ed is kind of
+familiar to nearly every experienced *Nix user even today.
+Besides that, there are vi/emacs still alive which also share
+some ideas from Ed.
+Sam/ACME might also count as contemporary successors.
+If anyone interested on the connection between editors,
+there are \href{https://www.bell-labs.com/usr/dmr/www/qed.html}
+{An incomplete history of the QED Text Editor}
+and \href{http://eecs.qmul.ac.uk/~gc/history/}{George Coulouris: Bits of History}
+available online.
+
+In other words, Ed is not entirely alien today,
+but for sure it is very much excentric to believe a reader ever used it.
+A short practical introduction follows.
+A conceptual implementation can be found in <<Software Tools>> by
+Brian W. Kernighan and P.J.Plauger.
+It might be interesting to look through along with this book
+because Sed is somewhere inside.

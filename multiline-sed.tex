@@ -1,0 +1,90 @@
+\chapter{Multiline Sed}
+Multilining refers to the state when Sed script operates on the pattern space
+where more than one line reside.
+\section{Block-wise Operating}
+One way of thinking of that is to operate on input block-wise instead of line-wise.
+An example would be the problem to filter objects by certain property
+where each object described in multiple consequent lines:
+\begin{lstlisting}
+Country: Washington
+City: United States
+Population: 705749
+====
+Country: Moscow
+City: Russia
+Population: 12506468
+====
+Country: Mexico City
+City: Mexico
+Population: 8918653
+====
+\end{lstlisting}
+
+Here objects are cities with three properties each.
+\lstinline{Population} is the property for filtering.
+Suppose the filtering condition is at least 10M population.
+The expected result is a list of matching objects (only Moscow for this input).
+
+The way to approach the problem presented here is as follows.
+Read in the whole block, check the property (if population is
+at least eight digits long),
+print out matching blocks or discard otherwise.
+
+With the assumption that each block terminates with \lstinline{====} line,
+reading the first one can be done by this script:
+\begin{lstlisting}
+:start
+/^(.*\n)?====$/ !{N ; b start}
+p ; Q
+\end{lstlisting}
+
+The first incantation matches multiline content with \lstinline{====} last line.
+As long as it does not hold (note the negation mark), it reads in one more line
+from the input and checks against the pattern again. As soon as it matches,
+the read block is printed out and execution terminates:
+\begin{lstlisting}
+$ sed -Enf example.sed < example
+Country: Washington
+City: United States
+Population: 705749
+====
+\end{lstlisting}
+
+Instead of unconditional printing \lstinline{p} let's add a pattern
+matching 10M+ population:
+\begin{lstlisting}
+s/^Population: [0-9]{8}/&/mp
+\end{lstlisting}
+
+Note multiline modifier \lstinline{m} here, which makes carret
+\lstinline{^} to match beginning of any line in the pattern space, not
+only the first one.
+Also quitting with \lstinline{Q} is no longer needed, so that
+execution will proceed to the next cycle
+and the next block processed:
+\begin{lstlisting}
+:start
+/^(.*\n)?====$/ !{N ; b start}
+s/^Population: [0-9]{8}/&/mp
+\end{lstlisting}
+
+It now gives the required result:
+\begin{lstlisting}
+$ sed -Enf example.sed < example
+Country: Moscow
+City: Russia
+Population: 12506468
+====
+\end{lstlisting}
+\section{Line-wise Operating}
+In the title of this section "line-wise" refers to the mode of reading the input.
+The previous section demontrates, how to read in multi-line block. That lead to
+a multi-line content in the pattern space. In this section it will be shown how
+multilining can be useful with a line-wise input reading.
+
+In this case multilining appears after transformations of a single line of input.
+At some point there are lines appear, which are records separated by newline.
+The reason of choosing this exactly separator is a syntax sugar provided by
+substitution command in multiline mode (enabled with \lstinline{m} or
+\lstinline{M}). Any other separator would give practically the same power of
+expressiveness, but in trade of complicating regular expressions.

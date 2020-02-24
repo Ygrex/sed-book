@@ -1,0 +1,150 @@
+\section{Ed Quick Start}
+Complete guides and tutorials can be easily found online as well as
+in OS distribuition repositories. GNU manual is quite exhaustive for
+example: \href{https://www.gnu.org/software/ed/manual/ed_manual.html}
+{The GNU ed line editor}.
+Below is a quick start guide with tips helpful on daily basis (if it
+happens that Ed is used daily).
+
+First of all, since Ed predates rich UI solutions being wide spread
+or event capable terminals development, it might be convenient to
+wrap it with
+\href{https://github.com/hanslub42/rlwrap}{rlwrap}
+or other
+\href{https://tiswww.cwru.edu/php/chet/readline/rltop.html}{Readline}
+enhancer. There is no assumption made in this guide though.
+
+Normally Ed session starts in a directory where files will be modified or
+created. It won't change working directory in run-time.
+Let it be \lstinline{sed-book/} directory:
+\begin{lstlisting}
+$ mkdir sed-book
+$ cd sed-book
+$ ed
+\end{lstlisting}
+There is no prompt by default, so it runs and simply waits for user input
+with no visual feedback. It is initialized with an empty buffer, the
+active mode is a command mode.
+
+Ed's buffer is a mixed concept of Sed's input stream and pattern space.
+Similar to Sed's input stream it can be addressed by a line number or
+a context, there is a current line number counter, no regular expressions
+span across line boundaries (use input in bold):
+\begin{lstlisting}[escapeinside={(*}{*)}]
+(*\bfseries \# buffer is initially empty:*)
+(*\bfseries \$=*)
+0
+(*\bfseries \# add sample text to see how addressing work:*)
+(*\bfseries a                          *)
+(*\bfseries Lorem ipsum dolor sit amet,*)
+(*\bfseries consectetur adipiscing elit,*)
+(*\bfseries sed do eiusmod tempor incididunt ut labore*)
+(*\bfseries et dolore magna aliqua.*)
+(*\bfseries .*)
+(*\bfseries \# address a line by its number:*)
+(*\bfseries 2p*)
+consectetur adipiscing elit,
+(*\bfseries \# address by a context:*)
+(*\bfseries /\char`\^sed/p*)
+sed do eiusmod tempor incididunt ut labore
+(*\bfseries \# there is a notion of the current line number:*)
+(*\bfseries .=*)
+3
+\end{lstlisting}
+
+Note that \lstinline{a} command entered the input mode which ended by a line
+with a single dot \lstinline{'.'} character.
+When one needs to literally put such a line in the input mode,
+there is no way of doing that in one command. Some different text is
+entered first and transformed by \lstinline{s} command later.
+
+Going forward user input and Ed output will not be
+distinguished by a typeface because there is no real
+visual distinction when working with Ed.
+
+So far four lines were appended to the Ed's buffer. Unlike Sed, output
+stream, the one, which is operated on by \lstinline{a},
+\lstinline{c}, \lstinline{i}, \lstinline{r} and other commands,
+this output stream is connected to the same buffer.
+
+Like Sed's pattern space, transformation commands readily
+operate with the data in the buffer. Transformations never
+span across line boundaries but can be repeated on a few
+lines in one command:
+\begin{lstlisting}
+,s/^/	/
+,p
+	Lorem ipsum dolor sit amet,
+	consectetur adipiscing elit,
+	sed do eiusmod tempor incididunt ut labore
+	et dolore magna aliqua.
+\end{lstlisting}
+
+Note the substitution string is a literal TAB, metacharacter
+\lstinline{'\t'} won't work. With Readline wrapper the way
+of entering literal TAB is pressing \lstinline{Ctrl-V} followed
+by \lstinline{TAB} button.
+
+Address \lstinline{,} refers to every line in the buffer, so that
+the substitution repeated for every line.
+
+As usual, the longer one uses Ed, the more commands they get custom to.
+Here is the full typescript of a session of working with Ed with most
+techniques important for the development as used later in the book.
+\begin{lstlisting}
+# remove Lorem Ipsum from the buffer
+,d
+# write LaTex document
+a
+\documentclass{article}
+\title{Sed Book}
+\author{Ygrex}
+\begin{document}
+\maketitle
+\end{document}
+.
+# save it to file
+w book.tex
+99
+# write Makefile to compile to PDF
+e Makefile
+Makefile: No such file or directory
+?
+a
+book.pdf: book.tex
+	@pdflatex -interaction batchmode -halt-on-error book.tex
+.
+# revisit the content
+,n
+1	book.pdf: book.tex
+2		@pdflatex -interaction batchmode -halt-on-error book.tex
+# double-check the current file is what is expected
+# it is good to check often before saving
+f
+Makefile
+# save Makefile
+w
+77
+# try it compiles
+!make
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian)
+ (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+!
+\end{lstlisting}
+
+If everything went right \lstinline{book.pdf} appeared and can be examined
+with a PDF viewer.
+In many ways it could go wrong, so as a rule it is better to save all the time,
+check filenames before nearly every \lstinline{w} command, make backups with
+a version control system such as Git.
+
+After gaining certain experience and mastering all Ed commands,
+the editing might become even more efficient than with screen oriented
+alternatives, but unlikely convenient to the same degree
+with all the excessive efforts and concentration
+required.
+
+Absence of syntax highlight, inability of changing individual characters and
+other editor limitations are charming not less than programming in Sed.
